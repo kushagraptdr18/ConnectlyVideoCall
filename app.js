@@ -37,7 +37,7 @@ app.get("/chat/:name",(req,res)=>{
 
 
 io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id);
+    // console.log("A user connected:", socket.id);
 
     socket.on("userInfo", (data) => {
         if (waitingUser.length > 0) {
@@ -174,7 +174,7 @@ socket.on("sendMessage", (data) => {
 
     socket.on("disconnect", () => {
       
-        console.log("A user disconnected:", socket.id);
+        // console.log("A user disconnected:", socket.id);
 
         // Remove from waiting users
         waitingUser = waitingUser.filter(user => user.socket.id !== socket.id);
