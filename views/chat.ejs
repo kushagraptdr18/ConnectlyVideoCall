@@ -390,7 +390,7 @@ toastr.error(data.message);
 
     const isReceiver = nam === data.receiverName;
     const partnerName = isReceiver ? data.senderName : data.receiverName;
-    connectedUserDiv.textContent = `Connected as: ${partnerName}`;
+    connectedUserDiv.textContent = `Connected to : ${partnerName}`;
     chatContainer.innerHTML = "";
   });
 
