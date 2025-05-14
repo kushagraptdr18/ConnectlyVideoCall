@@ -1,6 +1,9 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -190,9 +193,14 @@ socket.on("sendMessage", (data) => {
             return true; // Keep room
         });
     });
+    socket.on("hangupCall", ({ room }) => {
+    // Notify the other user in the room
+    socket.to(room).emit("hangupCall");
+  });
 });
 
+const port = process.env.PORT||3000
 
-server.listen(3000, () => {
-    console.log('Server running on port 3000');
+server.listen(port, () => {
+    console.log(`Server running on port ${port}` );
 });

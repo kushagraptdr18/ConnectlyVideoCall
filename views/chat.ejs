@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectly Chat Room</title>
   <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
-
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
   <style>
+    @import url('https://cdn.jsdelivr.net/npm/remixicon@3.2.0/fonts/remixicon.css');
+
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
     * { box-sizing: border-box; }
     body {
@@ -36,6 +38,7 @@
       border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
     button:hover {
       background: #6ef0ff;
@@ -133,7 +136,7 @@
       position: absolute;
       width: 200px;
       height: 120px;
-      bottom: 20px;
+      bottom: 100px;
       right: 20px;
       border: 2px solid white;
       border-radius: 8px;
@@ -142,63 +145,142 @@
       display: none;
     }
 
-    .video-controls {
+    .call-controls {
       position: absolute;
-      bottom: 20px;
+      bottom: 30px;
       left: 50%;
       transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
       z-index: 3;
+    }
+
+    .control-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .control-btn i {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .control-btn span {
+      font-size: 12px;
+    }
+
+    .control-btn:hover {
+      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .accept-btn {
+      background: rgba(76, 175, 80, 0.8);
+    }
+
+    .reject-btn, .hangup-btn {
+      background: rgba(244, 67, 54, 0.8);
+    }
+
+    .muted {
+      background: rgba(244, 67, 54, 0.8) !important;
+    }
+
+    .video-off {
+      background: rgba(244, 67, 54, 0.8) !important;
+    }
+
+    .call-answer-controls {
+      display: flex;
+    }
+
+    .in-call-controls {
       display: none;
     }
 
-    .video-controls button {
-      padding: 10px 20px;
-      margin: 0 10px;
-      font-size: 16px;
-      cursor: pointer;
+    .call-active .call-answer-controls {
+      display: none;
+    }
+
+    .call-active .in-call-controls {
+      display: flex;
     }
 
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    #loaderPage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #6ef0ff;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .spinner {
+      border: 5px solid #222;
+      border-top: 5px solid #6ef0ff;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+
+    @media(max-width: 768px) {
+      .local-video {
+        width: 150px;
+        height: 90px;
+        bottom: 90px;
+      }
+    
+      .control-btn {
+        width: 50px;
+        height: 50px;
+      }
+    }
+
+     #toast-container > .toast-error {
+    background-color: #6EF0FF !important;
+    color: black !important;
+  }
+
+
   </style>
 </head>
 <body>
 
-<div id="loaderPage" style="
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #6ef0ff;
-  flex-direction: column;
-  gap: 1rem;
-">
-  <div class="spinner" style="
-    border: 5px solid #222;
-    border-top: 5px solid #6ef0ff;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-  "></div>
+<div id="loaderPage">
+  <div class="spinner"></div>
   <div>Waiting to connect...</div>
 </div>
 
 <header>
   <div class="connected-user" id="connectedUser">Connected to: ...</div>
   <div class="buttons">
-    <button id="videoCallBtn">Video Call</button>
-    <button id="skipBtn">Skip</button>
+    <button id="videoCallBtn"><i class="ri-video-line"></i> Video Call</button>
+    <button id="skipBtn"><i class="ri-skip-forward-line"></i> Skip</button>
   </div>
 </header>
 
@@ -208,19 +290,44 @@
 
 <form class="typing-area" id="messageForm">
   <input type="text" id="messageInput" placeholder="Typing..." required />
-  <button type="submit">Send</button>
+  <button type="submit"><i class="ri-send-plane-fill"></i> Send</button>
 </form>
 
 <div id="videoModal" class="video-modal">
   <video id="remoteVideo" autoplay playsinline></video>
   <video id="localVideo" autoplay muted playsinline class="local-video"></video>
   
-  <div class="video-controls" id="videoControls">
-    <button id="acceptCallBtn">Accept</button>
-    <button id="rejectCallBtn">Reject</button>
+  <div class="call-controls">
+    <div class="call-answer-controls" id="callAnswerControls">
+      <button id="acceptCallBtn" class="control-btn accept-btn">
+        <i class="ri-phone-line"></i>
+        <span>Accept</span>
+      </button>
+      <button id="rejectCallBtn" class="control-btn reject-btn">
+        <i class="ri-phone-line" style="transform: rotate(135deg);"></i>
+        <span>Reject</span>
+      </button>
+    </div>
+    
+    <div class="in-call-controls" id="inCallControls">
+      <button id="muteBtn" class="control-btn">
+        <i class="ri-mic-line"></i>
+        <span>Mute</span>
+      </button>
+      <button id="videoOffBtn" class="control-btn">
+        <i class="ri-video-line"></i>
+        <span>Video</span>
+      </button>
+      <button id="hangupBtn" class="control-btn hangup-btn">
+        <i class="ri-phone-line" style="transform: rotate(135deg);"></i>
+        <span>End</span>
+      </button>
+    </div>
   </div>
-
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
 
@@ -243,7 +350,11 @@
   const remoteVideo = document.getElementById("remoteVideo");
   const acceptBtn = document.getElementById("acceptCallBtn");
   const rejectBtn = document.getElementById("rejectCallBtn");
-  const videoControls = document.getElementById("videoControls");
+  const muteBtn = document.getElementById("muteBtn");
+  const videoOffBtn = document.getElementById("videoOffBtn");
+  const hangupBtn = document.getElementById("hangupBtn");
+  const callAnswerControls = document.getElementById("callAnswerControls");
+  const inCallControls = document.getElementById("inCallControls");
 
   // WebRTC variables
   let localStream;
@@ -260,9 +371,15 @@
   loaderPage.style.display = "flex";
 
   // Handle waiting state
-  socket.on("notJoined", () => {
+  socket.on("notJoined", (data) => {
+    toastr.options = {
+  positionClass: "toast-top-center", // Top center position
+  timeOut: 3000,
+};
+toastr.error(data.message);
+
     loaderPage.style.display = "flex";
-    chatContainer.innerHTML = ""; // Clear old messages
+    chatContainer.innerHTML = "";
     connectedUserDiv.textContent = "Waiting to connect...";
   });
 
@@ -274,7 +391,7 @@
     const isReceiver = nam === data.receiverName;
     const partnerName = isReceiver ? data.senderName : data.receiverName;
     connectedUserDiv.textContent = `Connected as: ${partnerName}`;
-    chatContainer.innerHTML = ""; // Clear old messages
+    chatContainer.innerHTML = "";
   });
 
   // Message handling
@@ -319,26 +436,37 @@
       videoModal.style.display = "flex";
       videoCallBtn.disabled = true;
 
+      // Show in-call controls immediately for caller
+      callAnswerControls.style.display = "none";
+      inCallControls.style.display = "flex";
+
       // Send call request to opponent
       socket.emit("callUser", { room, from: nam });
-      // Hide controls until opponent responds
-      videoControls.style.display = "none";
     } catch (err) {
-      alert("Camera or mic permission denied.");
+        toastr.options = {
+  positionClass: "toast-top-center", // Top center position
+  timeOut: 3000,
+};
+      toastr.error("Camera or mic permission denied.");
+
     }
   });
 
   socket.on("incomingCall", () => {
     videoModal.style.display = "flex";
-    videoControls.style.display = "flex";
+    callAnswerControls.style.display = "flex";
+    inCallControls.style.display = "none";
   });
 
   acceptBtn.addEventListener("click", async () => {
-    videoControls.style.display = "none";
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localVideo.srcObject = localStream;
       localVideo.style.display = "block";
+      
+      // Switch to in-call controls
+      callAnswerControls.style.display = "none";
+      inCallControls.style.display = "flex";
       
       await createPeerConnection();
       const offer = await peerConnection.createOffer();
@@ -355,6 +483,7 @@
       inCall = true;
     } catch (err) {
       console.error("Error accepting call:", err);
+      closeVideoCall();
     }
   });
 
@@ -364,37 +493,71 @@
   });
 
   socket.on("callRejected", () => {
-    alert("User rejected the call.");
+    toastr.options = {
+  positionClass: "toast-top-center", // Top center position
+  timeOut: 3000,
+};
+    toastr.info("User rejected the call.");
+
     closeVideoCall();
   });
 
-  socket.on("signalingMessage", async (message) => {
-    const data = JSON.parse(message);
-    if (!peerConnection) await createPeerConnection();
+  // Mute functionality
+  muteBtn.addEventListener("click", toggleMute);
+
+  function toggleMute() {
+    if (!localStream) return;
     
-    try {
-      if (data.type === "offer") {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        
-        socket.emit("signalingMessage", {
-          room,
-          message: JSON.stringify({
-            type: "answer",
-            answer
-          })
-        });
-      } else if (data.type === "answer") {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-      } else if (data.type === "candidate") {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-      }
-    } catch (err) {
-      console.error("Error handling signaling message:", err);
+    const audioTracks = localStream.getAudioTracks();
+    if (audioTracks.length > 0) {
+      const isMuted = !audioTracks[0].enabled;
+      audioTracks[0].enabled = isMuted;
+      muteBtn.classList.toggle("muted", !isMuted);
+      muteBtn.innerHTML = isMuted 
+        ? '<i class="ri-mic-line"></i><span>Mute</span>' 
+        : '<i class="ri-mic-off-line"></i><span>Unmute</span>';
     }
+  }
+
+  // Video toggle functionality
+  videoOffBtn.addEventListener("click", toggleVideo);
+
+  function toggleVideo() {
+    if (!localStream) return;
+    
+    const videoTracks = localStream.getVideoTracks();
+    if (videoTracks.length > 0) {
+      const isVideoOn = videoTracks[0].enabled;
+      videoTracks[0].enabled = !isVideoOn;
+      videoOffBtn.classList.toggle("video-off", !isVideoOn);
+      videoOffBtn.innerHTML = isVideoOn 
+        ? '<i class="ri-video-line"></i><span>Video</span>' 
+        : '<i class="ri-video-off-line"></i><span>Video On</span>';
+      localVideo.style.display = isVideoOn ? "none" : "block";
+    }
+  }
+
+  // Hang up functionality
+  hangupBtn.addEventListener("click", hangupCall);
+
+  function hangupCall() {
+    socket.emit("hangupCall", { room });
+    closeVideoCall();
+  }
+
+  socket.on("hangupCall", () => {
+
+     toastr.options = {
+  positionClass: "toast-top-center", // Top center position
+  timeOut: 3000,
+};
+    
+    toastr.error("The other user has ended the call.");
+
+    closeVideoCall();
   });
 
+  // WebRTC functions
   async function createPeerConnection() {
     peerConnection = new RTCPeerConnection(rtcSettings);
     
@@ -426,7 +589,13 @@
     
     peerConnection.oniceconnectionstatechange = () => {
       if (peerConnection.iceConnectionState === "disconnected") {
-        closeVideoCall();
+        hangupCall();
+      }
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+      if (peerConnection.connectionState === "disconnected") {
+        hangupCall();
       }
     };
   }
@@ -447,7 +616,45 @@
     videoModal.style.display = "none";
     videoCallBtn.disabled = false;
     inCall = false;
+    
+    // Reset UI
+    callAnswerControls.style.display = "none";
+    inCallControls.style.display = "none";
+    
+    // Reset button states
+    muteBtn.classList.remove("muted");
+    muteBtn.innerHTML = '<i class="ri-mic-line"></i><span>Mute</span>';
+    videoOffBtn.classList.remove("video-off");
+    videoOffBtn.innerHTML = '<i class="ri-video-line"></i><span>Video</span>';
   }
+
+  socket.on("signalingMessage", async (message) => {
+    const data = JSON.parse(message);
+    if (!peerConnection) await createPeerConnection();
+    
+    try {
+      if (data.type === "offer") {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        socket.emit("signalingMessage", {
+          room,
+          message: JSON.stringify({
+            type: "answer",
+            answer
+          })
+        });
+      } else if (data.type === "answer") {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+      } else if (data.type === "candidate") {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+      }
+    } catch (err) {
+      console.error("Error handling signaling message:", err);
+    }
+  });
 </script>
+
 </body>
 </html>
