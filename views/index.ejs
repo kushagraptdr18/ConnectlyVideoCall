@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connectly - Welcome</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background-color: #000;
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 1.5rem;
+    }
+    .container {
+      background: #121212;
+      border-radius: 15px;
+      padding: 3rem 2.5rem;
+      max-width: 450px;
+      width: 100%;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+      text-align: center;
+    }
+    .title {
+      font-size: 2.8rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      margin-bottom: 1rem;
+    }
+    .subtitle {
+      font-size: 1.2rem;
+      color: #bbb;
+      margin-bottom: 2rem;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.75rem 1.2rem;
+      font-size: 1.1rem;
+      border-radius: 10px;
+      border: none;
+      background: #222;
+      color: #eee;
+    }
+    input[type="text"]:focus {
+      background: #333;
+      outline: 2px solid #6ef0ff;
+    }
+    button {
+      margin-top: 1.8rem;
+      background: #6ef0ff;
+      color: #000;
+      border: none;
+      padding: 0.85rem 2rem;
+      font-weight: 600;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #4cc8d8;
+      box-shadow: 0 0 15px #4cc8d8;
+    }
+    @media (max-width: 480px) {
+      .title { font-size: 2rem; }
+      input[type="text"] { font-size: 1rem; }
+      button { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1 class="title">Connectly</h1>
+    <p class="subtitle">Enter your name to get started</p>
+    <form id="startForm">
+      <input type="text" id="nameInput" placeholder="Your Name" required />
+      <button type="submit">Start</button>
+    </form>
+  </main>
+
+  <script>
+    document.getElementById('startForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('nameInput').value.trim();
+      if (name) {
+        window.location.href = `/chat/${name}`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connectly Chat Room</title>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background-color: #000;
+      color: #eee;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: #111;
+      border-bottom: 2px solid #333;
+    }
+    .connected-user { font-weight: 600; font-size: 1.3rem; }
+    .buttons { display: flex; gap: 1rem; }
+    button {
+      background: #222;
+      border: 2px solid #6ef0ff;
+      color: #6ef0ff;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #6ef0ff;
+      color: #000;
+    }
+    .chat-container {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      overflow-y: auto;
+      background: #121212;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .message {
+      max-width: 70%;
+      padding: 0.7rem 1rem;
+      border-radius: 15px;
+      position: relative;
+      word-wrap: break-word;
+    }
+    .message.you {
+      background: #6ef0ff;
+      color: #000;
+      align-self: flex-end;
+    }
+    .message.other {
+      background: #222;
+      color: #ddd;
+      align-self: flex-start;
+    }
+    .timestamp {
+      font-size: 0.65rem;
+      position: absolute;
+      bottom: 3px;
+      right: 8px;
+    }
+    .message.other .timestamp {
+      left: 8px;
+      right: auto;
+    }
+    .typing-area {
+      display: flex;
+      padding: 1rem 1.5rem;
+      background: #111;
+      border-top: 2px solid #333;
+    }
+    .typing-area input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      border: none;
+      background: #222;
+      color: #eee;
+    }
+    .typing-area button {
+      margin-left: 1rem;
+      padding: 0 1.3rem;
+      background: #6ef0ff;
+      color: #000;
+      border-radius: 12px;
+      border: none;
+    }
+    @media(max-width: 480px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+    }
+
+    .video-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    #remoteVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+      display: none;
+    }
+
+    .local-video {
+      position: absolute;
+      width: 200px;
+      height: 120px;
+      bottom: 20px;
+      right: 20px;
+      border: 2px solid white;
+      border-radius: 8px;
+      object-fit: cover;
+      z-index: 2;
+      display: none;
+    }
+
+    .video-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      display: none;
+    }
+
+    .video-controls button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loaderPage" style="
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #6ef0ff;
+  flex-direction: column;
+  gap: 1rem;
+">
+  <div class="spinner" style="
+    border: 5px solid #222;
+    border-top: 5px solid #6ef0ff;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+  "></div>
+  <div>Waiting to connect...</div>
+</div>
+
+<header>
+  <div class="connected-user" id="connectedUser">Connected to: ...</div>
+  <div class="buttons">
+    <button id="videoCallBtn">Video Call</button>
+    <button id="skipBtn">Skip</button>
+  </div>
+</header>
+
+<section class="chat-container" id="chatContainer">
+  <!-- Messages will appear here -->
+</section>
+
+<form class="typing-area" id="messageForm">
+  <input type="text" id="messageInput" placeholder="Typing..." required />
+  <button type="submit">Send</button>
+</form>
+
+<div id="videoModal" class="video-modal">
+  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="localVideo" autoplay muted playsinline class="local-video"></video>
+  
+  <div class="video-controls" id="videoControls">
+    <button id="acceptCallBtn">Accept</button>
+    <button id="rejectCallBtn">Reject</button>
+  </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+
+<script>
+  const socket = io();
+  const connectedUserDiv = document.getElementById('connectedUser');
+  const loaderPage = document.getElementById('loaderPage');
+  const chatContainer = document.getElementById('chatContainer');
+  const messageForm = document.getElementById('messageForm');
+  const messageInput = document.getElementById('messageInput');
+  const skipBtn = document.getElementById('skipBtn');
+  const videoCallBtn = document.getElementById('videoCallBtn');
+  const nam = "<%= name %>";
+  let room = null;
+  let typingTimeout;
+
+  // Video call elements
+  const videoModal = document.getElementById("videoModal");
+  const localVideo = document.getElementById("localVideo");
+  const remoteVideo = document.getElementById("remoteVideo");
+  const acceptBtn = document.getElementById("acceptCallBtn");
+  const rejectBtn = document.getElementById("rejectCallBtn");
+  const videoControls = document.getElementById("videoControls");
+
+  // WebRTC variables
+  let localStream;
+  let peerConnection;
+  let inCall = false;
+  const rtcSettings = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  };
+
+  // Send user info to server
+  socket.emit('userInfo', { name: nam });
+
+  // Show loader by default
+  loaderPage.style.display = "flex";
+
+  // Handle waiting state
+  socket.on("notJoined", () => {
+    loaderPage.style.display = "flex";
+    chatContainer.innerHTML = ""; // Clear old messages
+    connectedUserDiv.textContent = "Waiting to connect...";
+  });
+
+  // Handle successful connection
+  socket.on("joined", (data) => {
+    loaderPage.style.display = "none";
+    room = data.roomName;
+
+    const isReceiver = nam === data.receiverName;
+    const partnerName = isReceiver ? data.senderName : data.receiverName;
+    connectedUserDiv.textContent = `Connected as: ${partnerName}`;
+    chatContainer.innerHTML = ""; // Clear old messages
+  });
+
+  // Message handling
+  messageForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const msg = messageInput.value.trim();
+    if (!msg || !room) return;
+
+    socket.emit("sendMessage", { room, message: msg, sender: nam });
+    appendMessage("you", msg);
+    messageInput.value = "";
+  });
+
+  function appendMessage(who, messageText) {
+    const msgDiv = document.createElement("div");
+    msgDiv.className = `message ${who}`;
+    msgDiv.innerHTML = `${messageText}`;
+    chatContainer.appendChild(msgDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  socket.on("receiveMessage", (data) => {
+    appendMessage("other", data.message);
+  });
+  
+  // Handle Skip
+  skipBtn.addEventListener("click", () => {
+    if (!room) return;
+    socket.emit("skipUser", { roomName: room });
+    chatContainer.innerHTML = "";
+    connectedUserDiv.textContent = "Skipping...";
+    loaderPage.style.display = "flex";
+  });
+
+  // Video call functionality
+  videoCallBtn.addEventListener("click", async () => {
+    if (!room) return;
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
+      localVideo.style.display = "block";
+      videoModal.style.display = "flex";
+      videoCallBtn.disabled = true;
+
+      // Send call request to opponent
+      socket.emit("callUser", { room, from: nam });
+      // Hide controls until opponent responds
+      videoControls.style.display = "none";
+    } catch (err) {
+      alert("Camera or mic permission denied.");
+    }
+  });
+
+  socket.on("incomingCall", () => {
+    videoModal.style.display = "flex";
+    videoControls.style.display = "flex";
+  });
+
+  acceptBtn.addEventListener("click", async () => {
+    videoControls.style.display = "none";
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
+      localVideo.style.display = "block";
+      
+      await createPeerConnection();
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      
+      socket.emit("signalingMessage", {
+        room,
+        message: JSON.stringify({
+          type: "offer",
+          offer
+        })
+      });
+      
+      inCall = true;
+    } catch (err) {
+      console.error("Error accepting call:", err);
+    }
+  });
+
+  rejectBtn.addEventListener("click", () => {
+    socket.emit("rejectCall", { room });
+    closeVideoCall();
+  });
+
+  socket.on("callRejected", () => {
+    alert("User rejected the call.");
+    closeVideoCall();
+  });
+
+  socket.on("signalingMessage", async (message) => {
+    const data = JSON.parse(message);
+    if (!peerConnection) await createPeerConnection();
+    
+    try {
+      if (data.type === "offer") {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        socket.emit("signalingMessage", {
+          room,
+          message: JSON.stringify({
+            type: "answer",
+            answer
+          })
+        });
+      } else if (data.type === "answer") {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+      } else if (data.type === "candidate") {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+      }
+    } catch (err) {
+      console.error("Error handling signaling message:", err);
+    }
+  });
+
+  async function createPeerConnection() {
+    peerConnection = new RTCPeerConnection(rtcSettings);
+    
+    // Add local stream tracks
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+    }
+    
+    // Handle remote stream
+    peerConnection.ontrack = (event) => {
+      remoteVideo.srcObject = event.streams[0];
+      remoteVideo.style.display = "block";
+    };
+    
+    // Handle ICE candidates
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit("signalingMessage", {
+          room,
+          message: JSON.stringify({
+            type: "candidate",
+            candidate: event.candidate
+          })
+        });
+      }
+    };
+    
+    peerConnection.oniceconnectionstatechange = () => {
+      if (peerConnection.iceConnectionState === "disconnected") {
+        closeVideoCall();
+      }
+    };
+  }
+
+  function closeVideoCall() {
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      localStream = null;
+    }
+    localVideo.srcObject = null;
+    localVideo.style.display = "none";
+    remoteVideo.srcObject = null;
+    remoteVideo.style.display = "none";
+    videoModal.style.display = "none";
+    videoCallBtn.disabled = false;
+    inCall = false;
+  }
+</script>
+</body>
+</html>
